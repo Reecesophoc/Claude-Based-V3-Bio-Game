@@ -117,8 +117,13 @@
     .base:hover { transform: translateY(-3px) scale(1.05); }
     .base:active { transform: scale(0.95); }
     
-    .base.dragging { 
+    .base.dragging {
       opacity: 0.5; transform: rotate(10deg); cursor: grabbing;
+    }
+
+    .base.selected {
+      outline: 3px solid #ffeb3b;
+      box-shadow: 0 0 15px rgba(255,235,59,0.6);
     }
     
     .dropzone { 
@@ -323,7 +328,7 @@
         </div>
         
         <div class="instruction-banner" id="instruction-banner">
-          <h3><span class="step-indicator">1</span>Drag bases from the pool below to complete the DNA strands</h3>
+          <h3><span class="step-indicator">1</span>Select a base from the pool then click its destination</h3>
           <p>Match complementary bases: A↔T and G↔C</p>
         </div>
         
@@ -341,7 +346,7 @@
         </div>
         
         <div id="base-pool-area">
-          <div class="pool-header">🧬 Available DNA Bases - Drag to Complete Strands</div>
+          <div class="pool-header">🧬 Available DNA Bases - Click to Select</div>
           <div id="base-pool">
             <!-- Draggable bases will be generated here -->
           </div>
@@ -370,7 +375,9 @@
       totalBases: 0,
       completedBases: 0,
       hintsUsed: 0,
-      isGameActive: false
+      isGameActive: false,
+      playerName: '',
+      selectedBase: null
     };
 
     // Base pairing rules
@@ -380,7 +387,28 @@
     // Initialize game
     function initGame() {
       updateUI();
-      showWelcomeTutorial();
+      showNamePrompt();
+    }
+
+    function showNamePrompt() {
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div class="tutorial-content">
+          <h2>Enter Your Name</h2>
+          <input type="text" id="player-name-input" placeholder="Your name" style="padding:8px;font-size:1em;border-radius:4px;border:none;width:80%;max-width:300px;">
+          <div style="margin-top:20px;">
+            <button class="btn btn-primary" id="start-training">Start Training</button>
+          </div>
+        </div>
+      `;
+      overlay.querySelector('#start-training').addEventListener('click', () => {
+        const name = overlay.querySelector('#player-name-input').value.trim() || 'Player';
+        gameState.playerName = name;
+        overlay.remove();
+        showWelcomeTutorial();
+      });
+      document.body.appendChild(overlay);
     }
 
     function showWelcomeTutorial() {
@@ -388,7 +416,7 @@
       overlay.className = 'tutorial-overlay';
       overlay.innerHTML = `
         <div class="tutorial-content">
-          <h2>Welcome to DNA Replication Training!</h2>
+          <h2>Welcome to DNA Replication Training, ${gameState.playerName}!</h2>
           <p>You are at the Origin Citadel, where DNA replication begins. Your mission is to help complete the replication process by matching complementary DNA bases.</p>
           
           <div class="tutorial-steps">
@@ -398,11 +426,11 @@
             </div>
             <div class="tutorial-step">
               <span class="step-indicator">2</span>
-              <span>Drag matching bases from the pool below</span>
+              <span>Click a matching base from the pool below</span>
             </div>
             <div class="tutorial-step">
               <span class="step-indicator">3</span>
-              <span>Drop them in the empty spaces to complete the new strand</span>
+              <span>Click the correct spot in the new strand to place it</span>
             </div>
             <div class="tutorial-step">
               <span class="step-indicator">4</span>
@@ -487,7 +515,7 @@
       }
       
       // Reset instruction banner
-      updateInstructions('Drag bases from the pool below to complete the DNA strands', '1');
+      updateInstructions('Select a base from the pool below, then click the matching spot', '1');
       
       showMessage(`Level ${level} started! Complete the complementary strand.`, 'info');
     }
@@ -549,6 +577,7 @@
         dropzone.addEventListener('dragover', handleDragOver);
         dropzone.addEventListener('drop', handleDrop);
         dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('click', handleZoneClick);
         
         newSeq.appendChild(dropzone);
       });
@@ -577,10 +606,11 @@
         baseEl.textContent = base;
         baseEl.draggable = true;
         baseEl.id = `pool-base-${index}`;
-        
+
         baseEl.addEventListener('dragstart', handleDragStart);
         baseEl.addEventListener('dragend', handleDragEnd);
-        
+        baseEl.addEventListener('click', handleBaseClick);
+
         pool.appendChild(baseEl);
       });
     }
@@ -590,12 +620,13 @@
       e.dataTransfer.setData('element-id', e.target.id);
       e.target.classList.add('dragging');
       
-      // Highlight valid drop zones
-      document.querySelectorAll('.dropzone:empty').forEach(zone => {
-        if (zone.dataset.expected === e.target.textContent) {
-          zone.classList.add('hint');
-        }
-      });
+      if (gameState.level === 1) {
+        document.querySelectorAll('.dropzone:empty').forEach(zone => {
+          if (zone.dataset.expected === e.target.textContent) {
+            zone.classList.add('hint');
+          }
+        });
+      }
     }
 
     function handleDragEnd(e) {
@@ -604,6 +635,73 @@
       document.querySelectorAll('.dropzone').forEach(zone => {
         zone.classList.remove('hint');
       });
+    }
+
+    function handleBaseClick(e) {
+      if (gameState.selectedBase === e.currentTarget) {
+        gameState.selectedBase.classList.remove('selected');
+        gameState.selectedBase = null;
+        highlightValidZones('');
+        return;
+      }
+      if (gameState.selectedBase) {
+        gameState.selectedBase.classList.remove('selected');
+      }
+      gameState.selectedBase = e.currentTarget;
+      gameState.selectedBase.classList.add('selected');
+      highlightValidZones(gameState.selectedBase.textContent);
+    }
+
+    function highlightValidZones(base) {
+      document.querySelectorAll('.dropzone').forEach(zone => zone.classList.remove('hint'));
+      if (gameState.level === 1) {
+        document.querySelectorAll('.dropzone:empty').forEach(zone => {
+          if (zone.dataset.expected === base) {
+            zone.classList.add('hint');
+          }
+        });
+      }
+    }
+
+    function handleZoneClick(e) {
+      if (!gameState.selectedBase) return;
+      const dropzone = e.currentTarget;
+      if (dropzone.textContent !== '') return;
+
+      const droppedBase = gameState.selectedBase.textContent;
+      const expectedBase = dropzone.dataset.expected;
+
+      dropzone.textContent = droppedBase;
+      dropzone.classList.add(droppedBase);
+
+      gameState.selectedBase.remove();
+      gameState.selectedBase = null;
+      highlightValidZones('');
+
+      if (droppedBase === expectedBase) {
+        dropzone.classList.add('correct');
+        gameState.completedBases++;
+        playSound('correct');
+        setTimeout(() => dropzone.classList.remove('correct'), 600);
+      } else {
+        dropzone.classList.add('incorrect');
+        playSound('incorrect');
+        setTimeout(() => {
+          dropzone.textContent = '';
+          dropzone.className = 'dropzone';
+          const pool = document.getElementById('base-pool');
+          const baseEl = document.createElement('div');
+          baseEl.className = `base ${droppedBase}`;
+          baseEl.textContent = droppedBase;
+          baseEl.draggable = true;
+          baseEl.addEventListener('dragstart', handleDragStart);
+          baseEl.addEventListener('dragend', handleDragEnd);
+          baseEl.addEventListener('click', handleBaseClick);
+          pool.appendChild(baseEl);
+        }, 1000);
+      }
+
+      updateUI();
     }
 
     function handleDragOver(e) {
