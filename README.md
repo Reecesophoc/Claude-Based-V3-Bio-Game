@@ -1,5 +1,8 @@
 # Claude-Based-V3-Bio-Game
 
+
+This project is licensed under the [MIT License](LICENSE).
+
 This repository contains `V3.html`, a browser-based game for learning the basics of DNA replication. It runs entirely in the browser, so no build step is required.
 
 ## Opening the game
@@ -36,4 +39,3 @@ This check is optional but helps confirm your environment can execute Node.js sc
 
 - Any up‑to‑date web browser to play the game.
 - Node.js (v18 or later recommended) if you want to run the Node check or develop additional tooling.
-
