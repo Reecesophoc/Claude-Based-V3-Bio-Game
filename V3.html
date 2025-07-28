@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Origin Citadel - DNA Replication Training</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&amp;family=Inter:wght@300;400;500&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
     body, html { 
@@ -125,6 +125,7 @@
       outline: 3px solid #ffeb3b;
       box-shadow: 0 0 15px rgba(255,235,59,0.6);
     }
+
     
     .dropzone { 
       width: 50px; height: 50px; border: 3px dashed rgba(74,144,226,0.5);
@@ -336,8 +337,7 @@
           <h1>Origin Citadel</h1>
           <p id="level-description">DNA Replication Training - Level 1</p>
         </div>
-        
-        <div class="instruction-banner" id="instruction-banner">
+                <div class="instruction-banner" id="instruction-banner">
           <h3><span class="step-indicator">1</span>Select a base from the pool then click its destination</h3>
           <p>Match complementary bases: A↔T and G↔C</p>
         </div>
@@ -355,8 +355,10 @@
           </div>
         </div>
         
+
         <div id="base-pool-area">
           <div class="pool-header">🧬 Available DNA Bases - Click to Select</div>
+
           <div id="base-pool">
             <!-- Draggable bases will be generated here -->
           </div>
@@ -375,6 +377,7 @@
 
   <script>
     // Game State
+
     let gameState = {
       level: 1,
       health: 100,
@@ -391,6 +394,7 @@
       bossDamageId: null,
       isBossLevel: false
     };
+
 
     // Base pairing rules
     const basePairs = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
@@ -414,7 +418,26 @@
       }
     ];
 
+    const quizQuestions = [
+      {
+        q: 'Which enzyme synthesizes the new DNA strand?',
+        options: ['Helicase', 'DNA polymerase', 'Ligase'],
+        answer: 1
+      },
+      {
+        q: 'What base pairs with Adenine in DNA?',
+        options: ['Thymine', 'Cytosine', 'Uracil'],
+        answer: 0
+      },
+      {
+        q: 'In which direction is the new DNA strand built?',
+        options: ["3' → 5'", "5' → 3'", 'Both directions'],
+        answer: 1
+      }
+    ];
+
     // Initialize game
+
     function initGame() {
       updateUI();
       showNamePrompt();
@@ -443,10 +466,12 @@
       document.body.appendChild(overlay);
     }
 
-    function showWelcomeTutorial() {
+
+    function showNamePrompt() {
       const overlay = document.createElement('div');
       overlay.className = 'tutorial-overlay';
       overlay.innerHTML = `
+
         <div class="tutorial-content">
           <h2>Welcome to DNA Replication Training, ${gameState.playerName}!</h2>
           <p>You are at the Origin Citadel, where DNA replication begins. Your mission is to help complete the replication process by matching complementary DNA bases.</p>
@@ -468,12 +493,59 @@
               <span class="step-indicator">4</span>
               <span>Remember: A pairs with T, G pairs with C</span>
             </div>
+
           </div>
-          
-          <p><strong>Ready to start your training?</strong></p>
-          <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove(); startLevel(1);">Begin Training</button>
         </div>
       `;
+      overlay.querySelector('#start-training').addEventListener('click', () => {
+        const name = overlay.querySelector('#player-name-input').value.trim() || 'Player';
+        gameState.playerName = name;
+        overlay.remove();
+        showWelcomeTutorial();
+      });
+      document.body.appendChild(overlay);
+    }
+
+    function showWelcomeTutorial() {
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+
+      const content = document.createElement('div');
+      content.className = 'tutorial-content';
+
+      const heading = document.createElement('h2');
+      heading.textContent = `Welcome to DNA Replication Training, ${gameState.playerName}!`;
+      content.appendChild(heading);
+
+      const intro = document.createElement('p');
+      intro.textContent = 'You are at the Origin Citadel, where DNA replication begins. Your mission is to help complete the replication process by matching complementary DNA bases.';
+      content.appendChild(intro);
+
+      content.innerHTML += `
+          <div class="tutorial-steps">
+            <div class="tutorial-step">
+              <span class="step-indicator">1</span>
+              <span>Look at the original DNA strand (template)</span>
+            </div>
+            <div class="tutorial-step">
+              <span class="step-indicator">2</span>
+              <span>Click a matching base from the pool below</span>
+            </div>
+            <div class="tutorial-step">
+              <span class="step-indicator">3</span>
+              <span>Click the correct spot in the new strand to place it</span>
+            </div>
+            <div class="tutorial-step">
+              <span class="step-indicator">4</span>
+              <span>Remember: A pairs with T, G pairs with C</span>
+            </div>
+          </div>
+
+          <p><strong>Ready to start your training?</strong></p>
+          <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove(); startLevel(1);">Begin Training</button>
+      `;
+
+      overlay.appendChild(content);
       document.body.appendChild(overlay);
     }
 
@@ -521,6 +593,7 @@
       }
     }
 
+
     function startLevel(level) {
       gameState.level = level;
       gameState.isGameActive = true;
@@ -557,14 +630,16 @@
           if (gameState.isGameActive) takeDamage(2 * gameState.level);
         }, 5000);
       }
+
       
       // Start timer for levels 3+
       if (level >= 3) {
         startTimer();
       }
-      
+
       // Reset instruction banner
       updateInstructions('Select a base from the pool below, then click the matching spot', '1');
+
       
       showMessage(`Level ${level} started! Complete the complementary strand.`, 'info');
     }
@@ -622,11 +697,11 @@
         dropzone.className = 'dropzone';
         dropzone.dataset.expected = basePairs[base];
         dropzone.dataset.position = index;
-        
         dropzone.addEventListener('dragover', handleDragOver);
         dropzone.addEventListener('drop', handleDrop);
         dropzone.addEventListener('dragleave', handleDragLeave);
         dropzone.addEventListener('click', handleZoneClick);
+
         
         newSeq.appendChild(dropzone);
       });
@@ -663,13 +738,11 @@
         pool.appendChild(baseEl);
       });
     }
-
     function handleDragStart(e) {
       e.dataTransfer.setData('text/plain', e.target.textContent);
       e.dataTransfer.setData('element-id', e.target.id);
       e.target.classList.add('dragging');
-      
-      if (gameState.level === 1) {
+        if (gameState.level === 1) {
         document.querySelectorAll('.dropzone:empty').forEach(zone => {
           if (zone.dataset.expected === e.target.textContent) {
             zone.classList.add('hint');
@@ -684,6 +757,73 @@
       document.querySelectorAll('.dropzone').forEach(zone => {
         zone.classList.remove('hint');
       });
+    }
+
+    function handleBaseClick(e) {
+      if (gameState.selectedBase === e.currentTarget) {
+        gameState.selectedBase.classList.remove('selected');
+        gameState.selectedBase = null;
+        highlightValidZones('');
+        return;
+      }
+      if (gameState.selectedBase) {
+        gameState.selectedBase.classList.remove('selected');
+      }
+      gameState.selectedBase = e.currentTarget;
+      gameState.selectedBase.classList.add('selected');
+      highlightValidZones(gameState.selectedBase.textContent);
+    }
+
+    function highlightValidZones(base) {
+      document.querySelectorAll('.dropzone').forEach(zone => zone.classList.remove('hint'));
+      if (gameState.level === 1) {
+        document.querySelectorAll('.dropzone:empty').forEach(zone => {
+          if (zone.dataset.expected === base) {
+            zone.classList.add('hint');
+          }
+        });
+      }
+    }
+
+    function handleZoneClick(e) {
+      if (!gameState.selectedBase) return;
+      const dropzone = e.currentTarget;
+      if (dropzone.textContent !== '') return;
+
+      const droppedBase = gameState.selectedBase.textContent;
+      const expectedBase = dropzone.dataset.expected;
+
+      dropzone.textContent = droppedBase;
+      dropzone.classList.add(droppedBase);
+
+      gameState.selectedBase.remove();
+      gameState.selectedBase = null;
+      highlightValidZones('');
+
+      if (droppedBase === expectedBase) {
+        dropzone.classList.add('correct');
+        gameState.completedBases++;
+        playSound('correct');
+        setTimeout(() => dropzone.classList.remove('correct'), 600);
+      } else {
+        dropzone.classList.add('incorrect');
+        playSound('incorrect');
+        setTimeout(() => {
+          dropzone.textContent = '';
+          dropzone.className = 'dropzone';
+          const pool = document.getElementById('base-pool');
+          const baseEl = document.createElement('div');
+          baseEl.className = `base ${droppedBase}`;
+          baseEl.textContent = droppedBase;
+          baseEl.draggable = true;
+          baseEl.addEventListener('dragstart', handleDragStart);
+          baseEl.addEventListener('dragend', handleDragEnd);
+          baseEl.addEventListener('click', handleBaseClick);
+          pool.appendChild(baseEl);
+        }, 1000);
+      }
+
+      updateUI();
     }
 
     function handleBaseClick(e) {
@@ -821,6 +961,7 @@
       }
     }
 
+
     function startTimer() {
       const timeLimit = gameState.isBossLevel ? 30 : Math.max(30, 60 - (gameState.level * 2));
       gameState.timeLeft = timeLimit;
@@ -854,11 +995,9 @@
 
     function handleTimeUp() {
       if (!gameState.isGameActive) return;
-      
       gameState.isGameActive = false;
       takeDamage(20 * gameState.level);
-      showMessage("Time's up! DNA replication failed.", 'error');
-      
+      showMessage("Time's up! DNA replication failed.", 'error');      
       setTimeout(() => {
         if (gameState.health > 0) {
           startLevel(gameState.level);
@@ -912,8 +1051,7 @@
         // Poor completion
         takeDamage(15 * gameState.level);
         showMessage(`Poor replication quality (${Math.floor(accuracy * 100)}% accuracy). -${15 * gameState.level} Health`, 'error');
-        
-        setTimeout(() => {
+         setTimeout(() => {
           if (gameState.health > 0) {
             startLevel(gameState.level);
           } else {
@@ -1066,8 +1204,37 @@
       document.body.appendChild(overlay);
     }
 
+    function showQuiz(callback) {
+      const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div class="tutorial-content">
+          <h2>Quick Quiz</h2>
+          <p>${q.q}</p>
+          ${q.options
+            .map((o, i) => `<button class="btn btn-secondary quiz-opt" data-i="${i}" style="margin:5px;">${o}</button>`)
+            .join('')}
+        </div>
+      `;
+      overlay.querySelectorAll('.quiz-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.i, 10);
+          overlay.remove();
+          if (idx === q.answer) {
+            addXP(10 * gameState.level);
+            showMessage('Correct! Bonus XP awarded.', 'success');
+          } else {
+            takeDamage(10 * gameState.level);
+            showMessage('Incorrect answer. Health penalty applied.', 'error');
+          }
+          if (typeof callback === 'function') callback();
+        });
+      });
+      document.body.appendChild(overlay);
+    }
+
     function gameOver() {
-      saveScore(gameState.playerName, gameState.xp);
       const overlay = document.createElement('div');
       overlay.className = 'tutorial-overlay';
       overlay.innerHTML = `
@@ -1081,10 +1248,8 @@
           </div>
           <p>Every failure teaches us more about the intricate process of DNA replication.</p>
           <button class="btn btn-primary" onclick="location.reload();">Restart Training</button>
-          <button class="btn btn-secondary" id="leaderboard-btn" style="margin-left:10px;">Leaderboard</button>
         </div>
       `;
-      overlay.querySelector('#leaderboard-btn').addEventListener('click', showLeaderboard);
       document.body.appendChild(overlay);
     }
 
