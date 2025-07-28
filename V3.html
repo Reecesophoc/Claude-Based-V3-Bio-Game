@@ -146,6 +146,7 @@
       animation: correctPulse 0.6s ease;
     }
     
+
     .dropzone.incorrect {
       background: rgba(244,67,54,0.3); border-color: #f44336;
       animation: shake 0.5s ease;
@@ -155,6 +156,7 @@
       background: rgba(239,83,80,0.2); border-color: #e53935;
       animation: shake 1s infinite;
     }
+
     
     .dropzone.hint {
       border-color: #ffeb3b; animation: hint 2s infinite;
@@ -393,6 +395,7 @@
       mutationMap: {}
     };
 
+
     // Base pairing rules
     const basePairs = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
     const bases = ['A', 'T', 'G', 'C'];
@@ -414,6 +417,46 @@
         answer: 1
       }
     ];
+
+    function saveProgress() {
+      const data = {
+        level: gameState.level,
+        health: gameState.health,
+        xp: gameState.xp,
+        playerName: gameState.playerName
+      };
+      localStorage.setItem('dnaGameSave', JSON.stringify(data));
+    }
+
+    function loadProgress() {
+      const raw = localStorage.getItem('dnaGameSave');
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch(e) { return null; }
+    }
+
+    function showContinuePrompt(saved) {
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div class="tutorial-content">
+          <h2>Continue Training?</h2>
+          <p>Resume as <strong>${saved.playerName}</strong> at level ${saved.level}?</p>
+          <button class="btn btn-primary" id="continue-btn">Continue</button>
+          <button class="btn btn-secondary" id="new-btn" style="margin-left:10px;">New Game</button>
+        </div>`;
+      overlay.querySelector('#continue-btn').addEventListener('click', () => {
+        Object.assign(gameState, saved);
+        overlay.remove();
+        updateUI();
+        showLevelIntro();
+      });
+      overlay.querySelector('#new-btn').addEventListener('click', () => {
+        localStorage.removeItem('dnaGameSave');
+        overlay.remove();
+        showNamePrompt();
+      });
+      document.body.appendChild(overlay);
+    }
 
     function saveProgress() {
       const data = {
@@ -547,6 +590,32 @@
       document.body.appendChild(overlay);
     }
 
+    function showLevelIntro() {
+      const desc = gameState.isBossLevel ?
+        `Boss Level ${gameState.level} - Defeat the Genome Guardian` :
+        `Level ${gameState.level}`;
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div class="tutorial-content">
+          <h2>${desc}</h2>
+          <p>Sequence Length: ${gameState.totalBases}</p>
+          <button class="btn btn-primary" id="begin-level">Begin</button>
+        </div>`;
+      overlay.querySelector('#begin-level').addEventListener('click', () => {
+        overlay.remove();
+        gameState.isGameActive = true;
+        if (gameState.isBossLevel) {
+          gameState.bossDamageId = setInterval(() => {
+            if (gameState.isGameActive) takeDamage(2 * gameState.level);
+          }, 5000);
+        }
+        if (gameState.level >= 3) startTimer();
+        saveProgress();
+      });
+      document.body.appendChild(overlay);
+    }
+
     function updateUI() {
       document.getElementById('health-value').textContent = gameState.health;
       document.getElementById('xp-value').textContent = gameState.xp;
@@ -625,7 +694,7 @@
           }
         }
       }
-      
+
       // Update level description
       const desc = gameState.isBossLevel ?
         `Boss Level ${level} - Defeat the Genome Guardian` :
@@ -651,6 +720,11 @@
       }
       return sequence;
     }
+
+    function replaceAt(str, idx, chr) {
+      return str.substring(0, idx) + chr + str.substring(idx + 1);
+    }
+
 
     function replaceAt(str, idx, chr) {
       return str.substring(0, idx) + chr + str.substring(idx + 1);
@@ -713,6 +787,7 @@
         } else {
           dropzone.dataset.expected = basePairs[base];
         }
+
         
         dropzone.addEventListener('dragover', handleDragOver);
         dropzone.addEventListener('drop', handleDrop);
@@ -737,6 +812,7 @@
           neededBases.push(basePairs[base]);
         }
       });
+
       
       // Add some random extra bases to make it challenging
       const numExtras = Math.max(2, Math.floor(gameState.level / 2));
@@ -753,7 +829,6 @@
         baseEl.textContent = label;
         baseEl.draggable = true;
         baseEl.id = `pool-base-${index}`;
-
         baseEl.addEventListener('dragstart', handleDragStart);
         baseEl.addEventListener('dragend', handleDragEnd);
         baseEl.addEventListener('click', handleBaseClick);
@@ -767,6 +842,7 @@
       e.dataTransfer.setData('element-id', e.target.id);
       e.target.classList.add('dragging');
       
+
       if (e.target.textContent === 'R') {
         document.querySelectorAll('.dropzone[data-mutated="true"]').forEach(z => z.classList.add('hint'));
       } else if (gameState.level === 1) {
@@ -819,6 +895,7 @@
       const dropzone = e.currentTarget;
       if (dropzone.textContent !== '') return;
 
+
       const droppedBase = gameState.selectedBase.textContent;
       const expectedBase = dropzone.dataset.expected;
 
@@ -861,6 +938,7 @@
         dropzone.classList.add('incorrect');
         playSound('incorrect');
         setTimeout(() => {
+
           dropzone.textContent = '';
           dropzone.className = 'dropzone' + (dropzone.dataset.mutated === 'true' ? ' mutated' : '');
           const pool = document.getElementById('base-pool');
@@ -954,6 +1032,7 @@
           setTimeout(() => {
             dropzone.textContent = '';
             dropzone.className = 'dropzone' + (dropzone.dataset.mutated === 'true' ? ' mutated' : '');
+
             
             // Add base back to pool
             const pool = document.getElementById('base-pool');
@@ -1012,8 +1091,7 @@
       takeDamage(20 * gameState.level);
       showMessage("Time's up! DNA replication failed.", 'error');
       saveProgress();
-      
-      setTimeout(() => {
+       setTimeout(() => {
         if (gameState.health > 0) {
           startLevel(gameState.level);
         } else {
@@ -1049,27 +1127,26 @@
         addXP(totalXP);
         showMessage(`Perfect DNA replication! +${totalXP} XP`, 'success');
         showAchievement("Replication Master!", `Level ${gameState.level} completed perfectly!`);
-
         gameState.level++;
         saveProgress();
         setTimeout(() => showQuiz(() => startLevel(gameState.level)), 1000);
+
         
       } else if (accuracy >= 0.8) {
         // Good completion
         const xpGain = Math.floor(15 * accuracy);
         addXP(xpGain);
         showMessage(`Good replication! ${Math.floor(accuracy * 100)}% accuracy. +${xpGain} XP`, 'success');
-
         gameState.level++;
         saveProgress();
         setTimeout(() => showQuiz(() => startLevel(gameState.level)), 1000);
+
         
       } else {
         // Poor completion
         takeDamage(15 * gameState.level);
         showMessage(`Poor replication quality (${Math.floor(accuracy * 100)}% accuracy). -${15 * gameState.level} Health`, 'error');
-        
-        setTimeout(() => {
+                setTimeout(() => {
           if (gameState.health > 0) {
             startLevel(gameState.level);
           } else {
