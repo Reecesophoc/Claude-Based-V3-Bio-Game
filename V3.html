@@ -434,11 +434,19 @@
     function showWelcomeTutorial() {
       const overlay = document.createElement('div');
       overlay.className = 'tutorial-overlay';
-      overlay.innerHTML = `
-        <div class="tutorial-content">
-          <h2>Welcome to DNA Replication Training, ${gameState.playerName}!</h2>
-          <p>You are at the Origin Citadel, where DNA replication begins. Your mission is to help complete the replication process by matching complementary DNA bases.</p>
-          
+
+      const content = document.createElement('div');
+      content.className = 'tutorial-content';
+
+      const heading = document.createElement('h2');
+      heading.textContent = `Welcome to DNA Replication Training, ${gameState.playerName}!`;
+      content.appendChild(heading);
+
+      const intro = document.createElement('p');
+      intro.textContent = 'You are at the Origin Citadel, where DNA replication begins. Your mission is to help complete the replication process by matching complementary DNA bases.';
+      content.appendChild(intro);
+
+      content.innerHTML += `
           <div class="tutorial-steps">
             <div class="tutorial-step">
               <span class="step-indicator">1</span>
@@ -457,11 +465,12 @@
               <span>Remember: A pairs with T, G pairs with C</span>
             </div>
           </div>
-          
+
           <p><strong>Ready to start your training?</strong></p>
           <button class="btn btn-primary" onclick="this.parentElement.parentElement.remove(); startLevel(1);">Begin Training</button>
-        </div>
       `;
+
+      overlay.appendChild(content);
       document.body.appendChild(overlay);
     }
 
