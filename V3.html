@@ -843,7 +843,8 @@
       }
 
       dropzone.textContent = droppedBase;
-      dropzone.classList.add(droppedBase);
+      const cls = droppedBase === 'R' ? 'repair' : droppedBase;
+      dropzone.classList.add('base', cls);
 
       gameState.selectedBase.remove();
       gameState.selectedBase = null;
@@ -859,7 +860,7 @@
         playSound('incorrect');
         setTimeout(() => {
           dropzone.textContent = '';
-          dropzone.className = 'dropzone';
+          dropzone.className = 'dropzone' + (dropzone.dataset.mutated === 'true' ? ' mutated' : '');
           const pool = document.getElementById('base-pool');
           const baseEl = document.createElement('div');
           baseEl.className = `base ${droppedBase}`;
@@ -901,7 +902,9 @@
         }
 
         dropzone.textContent = droppedBase;
-        dropzone.classList.add(droppedBase === 'R' ? 'repair' : droppedBase);
+        const cls2 = droppedBase === 'R' ? 'repair' : droppedBase;
+        dropzone.classList.add('base', cls2);
+
         
         // Remove the base from the pool
         const poolBase = document.getElementById(elementId);
@@ -926,7 +929,7 @@
 
         if (droppedBase === 'R' && dropzone.dataset.mutated !== 'true') {
           showMessage('Repair base not needed here.', 'error');
-          setTimeout(() => { dropzone.textContent = ''; dropzone.className = 'dropzone'; }, 100);
+          setTimeout(() => { dropzone.textContent = ''; dropzone.className = 'dropzone' + (dropzone.dataset.mutated === 'true' ? ' mutated' : ''); }, 100);
           return;
         }
 
@@ -948,7 +951,7 @@
           // Return base to pool after a delay and clear dropzone
           setTimeout(() => {
             dropzone.textContent = '';
-            dropzone.className = 'dropzone';
+            dropzone.className = 'dropzone' + (dropzone.dataset.mutated === 'true' ? ' mutated' : '');
             
             // Add base back to pool
             const pool = document.getElementById('base-pool');
