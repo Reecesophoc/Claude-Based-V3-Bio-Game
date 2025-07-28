@@ -377,12 +377,32 @@
       hintsUsed: 0,
       isGameActive: false,
       playerName: '',
-      selectedBase: null
+      selectedBase: null,
+      bossDamageId: null,
+      isBossLevel: false
     };
 
     // Base pairing rules
     const basePairs = { 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G' };
     const bases = ['A', 'T', 'G', 'C'];
+
+    const quizQuestions = [
+      {
+        q: 'Which enzyme synthesizes the new DNA strand?',
+        options: ['Helicase', 'DNA polymerase', 'Ligase'],
+        answer: 1
+      },
+      {
+        q: 'What base pairs with Adenine in DNA?',
+        options: ['Thymine', 'Cytosine', 'Uracil'],
+        answer: 0
+      },
+      {
+        q: 'In which direction is the new DNA strand built?',
+        options: ["3' → 5'", "5' → 3'", 'Both directions'],
+        answer: 1
+      }
+    ];
 
     // Initialize game
     function initGame() {
@@ -493,21 +513,38 @@
       gameState.level = level;
       gameState.isGameActive = true;
       clearTimer();
-      
+
+      if (gameState.bossDamageId) {
+        clearInterval(gameState.bossDamageId);
+        gameState.bossDamageId = null;
+      }
+
+      gameState.isBossLevel = level % 5 === 0;
+
       // Generate sequence based on level
-      const sequenceLength = Math.min(4 + level, 12);
+      let sequenceLength = Math.min(4 + level, 12);
+      if (gameState.isBossLevel) sequenceLength = 12;
       gameState.currentOriginalStrand = generateRandomSequence(sequenceLength);
       gameState.totalBases = sequenceLength;
       gameState.completedBases = 0;
       gameState.hintsUsed = 0;
       
       // Update level description
-      document.getElementById('level-description').textContent = 
-        `DNA Replication Training - Level ${level} | Sequence Length: ${sequenceLength}`;
+      const desc = gameState.isBossLevel ?
+        `Boss Level ${level} - Defeat the Genome Guardian` :
+        `DNA Replication Training - Level ${level}`;
+      document.getElementById('level-description').textContent =
+        `${desc} | Sequence Length: ${sequenceLength}`;
       
       createDNAStrands();
       generateBasePool();
       updateUI();
+
+      if (gameState.isBossLevel) {
+        gameState.bossDamageId = setInterval(() => {
+          if (gameState.isGameActive) takeDamage(2 * gameState.level);
+        }, 5000);
+      }
       
       // Start timer for levels 3+
       if (level >= 3) {
@@ -773,7 +810,7 @@
     }
 
     function startTimer() {
-      const timeLimit = Math.max(30, 60 - (gameState.level * 2));
+      const timeLimit = gameState.isBossLevel ? 30 : Math.max(30, 60 - (gameState.level * 2));
       gameState.timeLeft = timeLimit;
       
       document.getElementById('timer-display').style.display = 'block';
@@ -807,8 +844,8 @@
       if (!gameState.isGameActive) return;
       
       gameState.isGameActive = false;
-      takeDamage(20);
-      showMessage("Time's up! DNA replication failed. -20 Health", 'error');
+      takeDamage(20 * gameState.level);
+      showMessage("Time's up! DNA replication failed.", 'error');
       
       setTimeout(() => {
         if (gameState.health > 0) {
@@ -846,23 +883,23 @@
         addXP(totalXP);
         showMessage(`Perfect DNA replication! +${totalXP} XP`, 'success');
         showAchievement("Replication Master!", `Level ${gameState.level} completed perfectly!`);
-        
+
         gameState.level++;
-        setTimeout(() => startLevel(gameState.level), 2500);
+        setTimeout(() => showQuiz(() => startLevel(gameState.level)), 1000);
         
       } else if (accuracy >= 0.8) {
         // Good completion
         const xpGain = Math.floor(15 * accuracy);
         addXP(xpGain);
         showMessage(`Good replication! ${Math.floor(accuracy * 100)}% accuracy. +${xpGain} XP`, 'success');
-        
+
         gameState.level++;
-        setTimeout(() => startLevel(gameState.level), 2500);
+        setTimeout(() => showQuiz(() => startLevel(gameState.level)), 1000);
         
       } else {
         // Poor completion
-        takeDamage(15);
-        showMessage(`Poor replication quality (${Math.floor(accuracy * 100)}% accuracy). -15 Health`, 'error');
+        takeDamage(15 * gameState.level);
+        showMessage(`Poor replication quality (${Math.floor(accuracy * 100)}% accuracy). -${15 * gameState.level} Health`, 'error');
         
         setTimeout(() => {
           if (gameState.health > 0) {
@@ -953,6 +990,36 @@
         achievement.classList.remove('show');
         setTimeout(() => achievement.remove(), 500);
       }, 3500);
+    }
+
+    function showQuiz(callback) {
+      const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+      const overlay = document.createElement('div');
+      overlay.className = 'tutorial-overlay';
+      overlay.innerHTML = `
+        <div class="tutorial-content">
+          <h2>Quick Quiz</h2>
+          <p>${q.q}</p>
+          ${q.options
+            .map((o, i) => `<button class="btn btn-secondary quiz-opt" data-i="${i}" style="margin:5px;">${o}</button>`)
+            .join('')}
+        </div>
+      `;
+      overlay.querySelectorAll('.quiz-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.dataset.i, 10);
+          overlay.remove();
+          if (idx === q.answer) {
+            addXP(10 * gameState.level);
+            showMessage('Correct! Bonus XP awarded.', 'success');
+          } else {
+            takeDamage(10 * gameState.level);
+            showMessage('Incorrect answer. Health penalty applied.', 'error');
+          }
+          if (typeof callback === 'function') callback();
+        });
+      });
+      document.body.appendChild(overlay);
     }
 
     function gameOver() {
